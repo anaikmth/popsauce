@@ -21,6 +21,7 @@
   --red: #FF4C6A;
   --yellow: #FFD60A;
   --radius: 16px;
+  --chat-w: 280px;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -32,13 +33,18 @@ body {
   display: flex; flex-direction: column; align-items: center;
   background-image: radial-gradient(ellipse 60% 40% at 50% -10%, rgba(255,77,28,0.12), transparent);
 }
-#root { width: 100%; max-width: 580px; padding: 1rem; flex: 1; display: flex; flex-direction: column; }
+#root { width: 100%; max-width: 860px; padding: 1rem; flex: 1; display: flex; flex-direction: column; }
 
 .screen { display: none; flex-direction: column; gap: 1rem; flex: 1; animation: fadeUp 0.3s ease; }
 .screen.active { display: flex; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes popIn { from { opacity: 0; transform: scale(0.88); } to { opacity: 1; transform: scale(1); } }
 @keyframes slideIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* GAME LAYOUT: left panel + chat */
+#screen-game.active { flex-direction: row; align-items: flex-start; gap: 1rem; }
+.game-main { flex: 1; display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
 
 /* LOGO */
 .logo { text-align: center; padding: 2rem 0 0.5rem; }
@@ -142,11 +148,25 @@ select {
 .feedback-bar.timeout { background: rgba(255,214,10,0.08); border: 1px solid rgba(255,214,10,0.25); color: var(--yellow); }
 .feedback-bar.skip { background: rgba(255,214,10,0.08); border: 1px solid rgba(255,214,10,0.25); color: var(--yellow); }
 
-/* ANSWERED */
+/* ANSWERED SECTION — players who tried */
 .answered-section { margin-top: 0.25rem; }
 .answered-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-.answered-list { display: flex; flex-wrap: wrap; gap: 5px; min-height: 24px; }
-.answered-chip { background: rgba(0,214,143,0.1); border: 1px solid rgba(0,214,143,0.25); border-radius: 999px; padding: 3px 10px; font-size: 0.78rem; color: var(--green); animation: popIn 0.2s ease; }
+.answered-list { display: flex; flex-direction: column; gap: 4px; min-height: 24px; }
+.answered-chip {
+  display: flex; align-items: center; gap: 6px;
+  border-radius: 8px; padding: 5px 10px; font-size: 0.78rem;
+  animation: slideUp 0.2s ease;
+}
+.answered-chip.correct-chip {
+  background: rgba(0,214,143,0.08); border: 1px solid rgba(0,214,143,0.2); color: var(--green);
+}
+.answered-chip.wrong-chip {
+  background: rgba(255,76,106,0.06); border: 1px solid rgba(255,76,106,0.15); color: #FF7A8A;
+}
+.chip-player-av { font-size: 0.9rem; }
+.chip-player-name { font-weight: 600; }
+.chip-player-ans { color: inherit; opacity: 0.75; margin-left: 4px; }
+.chip-status { margin-left: auto; font-size: 0.75rem; }
 
 /* INTER SCORES */
 .inter-scores { display: flex; flex-direction: column; gap: 6px; }
@@ -179,6 +199,165 @@ select {
 .host-label { font-size: 0.7rem; color: var(--orange); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
 .setting-row { display: flex; align-items: center; gap: 8px; }
 .setting-row label { font-size: 0.85rem; color: var(--muted); flex: 1; }
+
+/* ═══ CHAT ═══ */
+.chat-panel {
+  width: var(--chat-w);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  height: calc(100vh - 2rem);
+  position: sticky;
+  top: 1rem;
+}
+.chat-header {
+  padding: 10px 14px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chat-header .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; }
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  scroll-behavior: smooth;
+}
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.chat-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  animation: slideUp 0.15s ease;
+}
+.chat-msg.self .chat-bubble {
+  background: rgba(255,77,28,0.12);
+  border-color: rgba(255,77,28,0.22);
+  color: var(--text);
+  align-self: flex-end;
+}
+.chat-msg-meta {
+  font-size: 0.68rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.chat-msg.self .chat-msg-meta { justify-content: flex-end; }
+.chat-bubble {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 0.83rem;
+  line-height: 1.4;
+  word-break: break-word;
+  max-width: 100%;
+  align-self: flex-start;
+}
+.chat-msg.self .chat-bubble { align-self: flex-end; }
+.chat-system {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--muted);
+  padding: 2px 0;
+}
+.chat-input-row {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid var(--border);
+}
+.chat-input-row input {
+  height: 38px;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  padding: 0 10px;
+}
+.chat-send-btn {
+  height: 38px;
+  width: 38px;
+  border-radius: 8px;
+  border: none;
+  background: var(--orange);
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.chat-send-btn:hover { opacity: 0.85; }
+
+/* Chat also available in lobby & scores screens, but as a floating toggle on smaller screens */
+.chat-float-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--orange);
+  border: none;
+  color: white;
+  font-size: 1.3rem;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255,77,28,0.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.chat-float-btn .chat-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--red);
+  color: white;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  min-width: 18px;
+  text-align: center;
+  display: none;
+}
+
+/* Lobby chat: bottom panel */
+.lobby-chat {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 240px;
+}
+.lobby-chat .chat-messages { max-height: 160px; }
+
+@media (max-width: 680px) {
+  #screen-game.active { flex-direction: column; }
+  .chat-panel { display: none; position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: 55vh; border-radius: 16px 16px 0 0; z-index: 40; }
+  .chat-panel.open { display: flex; }
+  .chat-float-btn { display: flex; }
+}
 </style>
 </head>
 <body>
@@ -242,38 +421,66 @@ select {
       </div>
     </div>
     <button class="btn btn-primary btn-full" id="btn-start" disabled>▶ Lancer la partie</button>
+    <!-- Lobby chat -->
+    <div class="lobby-chat">
+      <div class="chat-header"><span class="dot"></span> Chat</div>
+      <div class="chat-messages" id="lobby-chat-messages"></div>
+      <div class="chat-input-row">
+        <input type="text" id="lobby-chat-input" placeholder="Message..." maxlength="200" autocomplete="off"/>
+        <button class="chat-send-btn" id="lobby-chat-send">➤</button>
+      </div>
+    </div>
     <button class="btn btn-ghost btn-full" id="btn-leave">Quitter</button>
   </div>
 
   <!-- GAME -->
   <div id="screen-game" class="screen">
-    <div class="scoreboard-mini" id="scoreboard-mini"></div>
-    <div class="card">
-      <div class="q-meta">
-        <span class="q-num" id="g-qnum">Q1/10</span>
-        <span class="q-theme" id="g-theme">Thème</span>
+    <!-- Left: main game -->
+    <div class="game-main">
+      <div class="scoreboard-mini" id="scoreboard-mini"></div>
+      <div class="card">
+        <div class="q-meta">
+          <span class="q-num" id="g-qnum">Q1/10</span>
+          <span class="q-theme" id="g-theme">Thème</span>
+        </div>
+        <div class="timer-row">
+          <div class="timer-bar-wrap" id="timer-wrap"><div id="timer-bar"></div></div>
+          <div id="timer-num">20</div>
+        </div>
+        <div class="q-emoji" id="g-emoji">❓</div>
+        <div class="q-text" id="g-question">Question...</div>
+        <div class="q-hint" id="g-hint"></div>
+        <div class="answer-row">
+          <input type="text" id="g-answer" placeholder="Ta réponse..." autocomplete="off" autocorrect="off" spellcheck="false"/>
+          <button class="btn btn-primary" id="btn-answer">OK</button>
+        </div>
+        <div id="g-feedback" style="display:none;"></div>
       </div>
-      <div class="timer-row">
-        <div class="timer-bar-wrap" id="timer-wrap"><div id="timer-bar"></div></div>
-        <div id="timer-num">20</div>
+      <div class="skip-row" id="skip-section">
+        <button class="btn btn-skip" id="btn-skip">⏭ Passer (vote)</button>
+        <span class="skip-votes" id="skip-votes"></span>
       </div>
-      <div class="q-emoji" id="g-emoji">❓</div>
-      <div class="q-text" id="g-question">Question...</div>
-      <div class="q-hint" id="g-hint"></div>
-      <div class="answer-row">
-        <input type="text" id="g-answer" placeholder="Ta réponse..." autocomplete="off" autocorrect="off" spellcheck="false"/>
-        <button class="btn btn-primary" id="btn-answer">OK</button>
+      <div class="answered-section">
+        <div class="answered-label">Réponses des joueurs</div>
+        <div class="answered-list" id="answered-list"></div>
       </div>
-      <div id="g-feedback" style="display:none;"></div>
     </div>
-    <div class="skip-row" id="skip-section">
-      <button class="btn btn-skip" id="btn-skip">⏭ Passer (vote)</button>
-      <span class="skip-votes" id="skip-votes"></span>
+
+    <!-- Right: chat panel -->
+    <div class="chat-panel" id="game-chat-panel">
+      <div class="chat-header"><span class="dot"></span> Chat</div>
+      <div class="chat-messages" id="game-chat-messages"></div>
+      <div class="chat-input-row">
+        <input type="text" id="game-chat-input" placeholder="Message..." maxlength="200" autocomplete="off"/>
+        <button class="chat-send-btn" id="game-chat-send">➤</button>
+      </div>
     </div>
-    <div class="answered-section">
-      <div class="answered-label">Ont trouvé ✓</div>
-      <div class="answered-list" id="answered-list"></div>
-    </div>
+
+    <!-- Mobile chat toggle -->
+    <button class="chat-float-btn" id="chat-float-btn" title="Chat">
+      💬
+      <span class="chat-badge" id="chat-badge"></span>
+    </button>
   </div>
 
   <!-- INTER SCORES -->
@@ -306,6 +513,7 @@ const AVATARS = ['😎','🥳','🤩','🦊','🐼','🐸','🦄','🐙','🤖',
 const socket = io();
 let myRoom=null, myName='', myAvatar=AVATARS[0], isHost=false, myId=null;
 let answered=false, skipped=false, timerInterval=null, currentTimer=20;
+let unreadChat = 0;
 
 // AVATAR GRID
 const grid = document.getElementById('avatar-grid');
@@ -332,7 +540,67 @@ function notif(msg, dur=3000) {
   setTimeout(() => el.remove(), dur);
 }
 
-// HOME
+// ── CHAT ──────────────────────────────────────────────
+function appendChatMsg(containerId, payload, isSelf) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'chat-msg' + (isSelf ? ' self' : '');
+  const meta = document.createElement('div');
+  meta.className = 'chat-msg-meta';
+  meta.innerHTML = `<span>${payload.avatar}</span><span>${isSelf ? 'Toi' : payload.name}</span>`;
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble';
+  bubble.textContent = payload.text;
+  if (!isSelf) wrap.appendChild(meta);
+  wrap.appendChild(bubble);
+  if (isSelf) wrap.appendChild(meta);
+  container.appendChild(wrap);
+  container.scrollTop = container.scrollHeight;
+}
+
+function appendChatSystem(containerId, text) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const el = document.createElement('div');
+  el.className = 'chat-system';
+  el.textContent = text;
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function sendChat(inputId) {
+  const input = document.getElementById(inputId);
+  const text = input.value.trim();
+  if (!text) return;
+  socket.emit('chat_message', { text });
+  input.value = '';
+}
+
+// Wire chat inputs
+['lobby-chat-input','game-chat-input'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(id); });
+});
+document.getElementById('lobby-chat-send').onclick = () => sendChat('lobby-chat-input');
+document.getElementById('game-chat-send').onclick = () => sendChat('game-chat-input');
+
+// Mobile chat toggle
+const floatBtn = document.getElementById('chat-float-btn');
+const gamePanel = document.getElementById('game-chat-panel');
+const badge = document.getElementById('chat-badge');
+floatBtn.onclick = () => {
+  gamePanel.classList.toggle('open');
+  if (gamePanel.classList.contains('open')) {
+    unreadChat = 0;
+    badge.style.display = 'none';
+    badge.textContent = '';
+    const msgs = document.getElementById('game-chat-messages');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+  }
+};
+
+// ── HOME ───────────────────────────────────────────────
 document.getElementById('btn-create').onclick = () => {
   myName = document.getElementById('home-name').value.trim();
   if (!myName) { notif('Entre ton pseudo !'); return; }
@@ -349,7 +617,7 @@ function joinRoom() {
   socket.emit('join_room', { code, name: myName, avatar: myAvatar });
 }
 
-// LOBBY
+// ── LOBBY ──────────────────────────────────────────────
 document.getElementById('room-code-display').onclick = () => {
   navigator.clipboard.writeText(myRoom).catch(() => {});
   notif('Code copié ! 📋');
@@ -365,7 +633,7 @@ document.getElementById('btn-leave').onclick = () => location.reload();
 document.getElementById('btn-home').onclick = () => location.reload();
 document.getElementById('btn-restart').onclick = () => socket.emit('start_game', getSettings());
 
-// GAME
+// ── GAME ───────────────────────────────────────────────
 document.getElementById('btn-answer').onclick = sendAnswer;
 document.getElementById('g-answer').addEventListener('keydown', e => { if (e.key==='Enter') sendAnswer(); });
 function sendAnswer() {
@@ -375,7 +643,7 @@ function sendAnswer() {
   socket.emit('answer', { answer: val });
 }
 document.getElementById('btn-skip').onclick = () => {
-  if (skipped) return;
+  if (skipped || answered) return;
   skipped = true;
   document.getElementById('btn-skip').disabled = true;
   socket.emit('vote_skip');
@@ -393,10 +661,11 @@ function startClientTimer(total) {
     barEl.style.width = pct + '%';
     numEl.textContent = Math.ceil(Math.max(0, currentTimer));
     if (pct < 25) { wrapEl.classList.add('urgent'); numEl.classList.add('urgent'); }
+    if (currentTimer <= 0) clearInterval(timerInterval);
   }, 500);
 }
 
-// SOCKET EVENTS
+// ── SOCKET EVENTS ─────────────────────────────────────
 socket.on('connect', () => { myId = socket.id; });
 
 socket.on('room_created', ({ code }) => {
@@ -436,6 +705,7 @@ socket.on('game_start', () => {
   answered = false; skipped = false;
   document.getElementById('g-feedback').style.display = 'none';
   document.getElementById('answered-list').innerHTML = '';
+  unreadChat = 0; badge.textContent = ''; badge.style.display = 'none';
   show('game');
 });
 socket.on('question', ({ index, total, theme, emoji, question, hint, timer }) => {
@@ -469,6 +739,8 @@ socket.on('answer_result', ({ correct, pts }) => {
     answered = true;
     document.getElementById('g-answer').disabled = true;
     document.getElementById('btn-answer').disabled = true;
+    // Disable skip for players who answered correctly
+    document.getElementById('btn-skip').disabled = true;
     fb.className = 'feedback-bar correct';
     fb.textContent = `✅ Correct ! +${pts} pts`;
   } else {
@@ -477,10 +749,40 @@ socket.on('answer_result', ({ correct, pts }) => {
     setTimeout(() => { if (!answered) fb.style.display = 'none'; }, 1200);
   }
 });
-socket.on('player_answered', ({ name }) => {
+// Player answered correctly
+socket.on('player_answered', ({ id, name, avatar, correct }) => {
+  const list = document.getElementById('answered-list');
+  // Update existing chip if already exists (wrong→correct)
+  const existing = list.querySelector(`[data-pid="${id}"]`);
+  if (existing) {
+    existing.className = 'answered-chip correct-chip';
+    existing.querySelector('.chip-player-ans').textContent = '✓ trouvé !';
+    existing.querySelector('.chip-status').textContent = '✅';
+    return;
+  }
   const chip = document.createElement('div');
-  chip.className = 'answered-chip'; chip.textContent = name;
-  document.getElementById('answered-list').appendChild(chip);
+  chip.className = 'answered-chip correct-chip';
+  chip.dataset.pid = id;
+  chip.innerHTML = `<span class="chip-player-av">${avatar}</span><span class="chip-player-name">${name}</span><span class="chip-player-ans">✓ trouvé !</span><span class="chip-status">✅</span>`;
+  list.appendChild(chip);
+});
+// Player tried but wrong
+socket.on('player_tried', ({ id, name, avatar, answer }) => {
+  if (id === socket.id) return; // We already have our own feedback
+  const list = document.getElementById('answered-list');
+  // Don't add if player already has a correct chip
+  const existing = list.querySelector(`[data-pid="${id}"]`);
+  if (existing && existing.classList.contains('correct-chip')) return;
+  if (existing) {
+    // Update the latest wrong attempt
+    existing.querySelector('.chip-player-ans').textContent = `"${answer}"`;
+    return;
+  }
+  const chip = document.createElement('div');
+  chip.className = 'answered-chip wrong-chip';
+  chip.dataset.pid = id;
+  chip.innerHTML = `<span class="chip-player-av">${avatar}</span><span class="chip-player-name">${name}</span><span class="chip-player-ans">"${answer}"</span><span class="chip-status">❌</span>`;
+  list.appendChild(chip);
 });
 socket.on('timeout', ({ answer }) => {
   clearInterval(timerInterval);
@@ -544,6 +846,37 @@ socket.on('game_over', scores => {
   `).join('');
   if (isHost) document.getElementById('btn-restart').style.display = 'flex';
   show('end');
+});
+
+// ── CHAT EVENTS ────────────────────────────────────────
+socket.on('chat_history', messages => {
+  // Replay history into both panels
+  ['lobby-chat-messages','game-chat-messages'].forEach(cid => {
+    const el = document.getElementById(cid);
+    if (el) el.innerHTML = '';
+  });
+  messages.forEach(m => {
+    const isSelf = m.senderId === socket.id;
+    ['lobby-chat-messages','game-chat-messages'].forEach(cid => {
+      appendChatMsg(cid, m, isSelf);
+    });
+  });
+});
+
+socket.on('chat_message', payload => {
+  const isSelf = payload.senderId === socket.id;
+  // Add to both panels (they share history)
+  appendChatMsg('lobby-chat-messages', payload, isSelf);
+  appendChatMsg('game-chat-messages', payload, isSelf);
+
+  // Badge for mobile when game panel is closed
+  const currentScreen = document.querySelector('.screen.active');
+  const isGameScreen = currentScreen && currentScreen.id === 'screen-game';
+  if (isGameScreen && !isSelf && !gamePanel.classList.contains('open') && window.innerWidth <= 680) {
+    unreadChat++;
+    badge.textContent = unreadChat > 9 ? '9+' : unreadChat;
+    badge.style.display = 'block';
+  }
 });
 </script>
 </body>
